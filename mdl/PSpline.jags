@@ -1,0 +1,28 @@
+	
+
+model{
+    # Priors
+    sigma2_perc ~ dgamma(0.001, 0.001)
+    sigma <- sqrt(1/sigma2_perc)
+
+    x ~ dchisq(3)
+    v = (3*xi*xi)/x
+    tau ~ dnorm(0, 1/v)T(0,) # tau ~ dt(0, 1/(xi*xi), 3)T(0,)
+    # tau ~ dt(0, 1/(xi*xi), 3)T(0,)
+
+    for(i in 1:2){
+        theta[i] ~ dnorm(0, 1/(100*100))
+    }
+    for(i in 3:Q){
+        theta[i] ~ dnorm(2*theta[i-1] - theta[i-2], 1/(tau*tau))
+    }
+
+    mu <- B %*% theta
+
+    for(i in 1:T){
+        y[i] ~ dnorm(mu[i], sigma2_perc)
+    }
+
+}
+
+

@@ -1,0 +1,17 @@
+# Ignore output
+*.RDS
+
+# Ignore pdfs
+*.pdf
+
+# macOS system files
+.DS_Store
+
+# VSCode settings
+.vscode/
+.settings.json
+
+# R project settings
+.Rproj.user/
+.Rhistory
+.RData
