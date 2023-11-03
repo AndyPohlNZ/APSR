@@ -21,8 +21,8 @@ set.seed(seed)
 
 # Set MCMC parameters
 nchains <- 4 # Number of independent chains
-nadapt <- 5000 # Size of adaption phase
-nsampling <- 10000 # Number of samples per chain
+nadapt <- 10000 # Size of adaption phase
+nsampling <- 50000 # Number of samples per chain
 thin <- 1 # Thinning rate per chain.
 
 # ============================= Load Data ======================================
@@ -201,7 +201,7 @@ if (model_type %in% c("PSpline", "All")) {
         time = t2 - t1
     ), file = paste0(save_folder, "PSpline.RDS"))
 }
-# ====================== P-Spline - heavy =============================================
+# ====================== APS_ind =============================================
 if (model_type %in% c("APS_ind", "All")) {
     print("        2: APS_ind")
     coda.samples.wrapper <- function(j) {

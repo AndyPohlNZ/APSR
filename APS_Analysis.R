@@ -211,7 +211,7 @@ saveRDS(
         rhat_results = rhat_results,
         comp_time = comp_time
     ),
-    file = "./results/APS_results.rds"
+    file = "./results/APS_results.RDS"
 )
 
 
@@ -382,7 +382,7 @@ coverage[2] <- mean(ddy < APS_ind_est$ddy_ci[, 2] & ddy > APS_ind_est$ddy_ci[, 1
 
 coverage[3] <- mean(ddy < APS_spl_est$ddy_ci[, 2] & ddy > APS_spl_est$ddy_ci[, 1])
 coverage[4] <- mean(ddy < APS_ar_est$ddy_ci[, 2] & ddy > APS_ar_est$ddy_ci[, 1])
-
+names(coverage) <- c("PSpline", "APS_ind", "APS_spl", "APS_ar")
 # ======================= Plot Figure 4: Generated Quatntites =======================
 
 # Generate estimates of peak acceleration
@@ -400,7 +400,8 @@ for (i in 1:nsamps) {
     peak_accn_APSar[i] <- max(abs(APS_ar_fit$ddy[i, ]))
 }
 
-
+quantile(peak_accn_APSspl, probs = c(0.05, 0.5, 0.95))
+quantile(peak_accn_APSar, probs = c(0.05, 0.5, 0.95))
 
 # Generate estiamtes of stationary duration
 stationary_duration_criterion <- 0
@@ -497,6 +498,9 @@ stationary_duration_APS_ind <- stationary_duration_APS_ind / fs
 stationary_duration_APS_spl <- stationary_duration_APS_spl / fs
 stationary_duration_APS_ar <- stationary_duration_APS_ar / fs
 
+
+quantile(stationary_duration_APS_spl, probs = c(0.05, 0.5, 0.95))
+quantile(stationary_duration_APS_ar, probs = c(0.05, 0.5, 0.95))
 # Make Plot
 pdf(paste0("./results/figures/GenQuantities.pdf"), width = 11, height = 6.5)
 par(mfrow = c(1, 2))
