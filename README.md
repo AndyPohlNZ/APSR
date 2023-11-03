@@ -13,12 +13,12 @@ shiny::runApp("./app/")
 
 This package is currently under development and is not yet registered.  While the package is designed for use for common data-processing problems in biomechancis (noteably inverse kinematics and inverse dynamics applications) its use is not limited to this application.
 
-AdPSpline was developed by:
+`APSR` was developed and is maintained by:
 
 [Andrew J. Pohl](https://andypohlnz.github.io/)
 andrew.pohl@ucalgary.ca
 
-If you wish to contribute to the development of this package or identify any issues please raise these via an issue or pull request on the github repository.
+If you wish to contribute to the development of this package or identify any issues please raise these via an issue or pull request.
 
 ## Installation
 `APSR` requires a working installation of [R](https://www.r-project.org/) and was tested on R version 4.2.1.  Please see the [R](https://www.r-project.org/) documetation for installation instructions.
