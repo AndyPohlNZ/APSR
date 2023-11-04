@@ -6,7 +6,7 @@ The majority of  methods considered are Bayesian in nature and rely on Markov Ch
 
 A walkthrough of model fitting is provided in the `APS_Fit.R` file, with `APS_Analysis.R` containing additonal frequently used visualisations which form part of the acompanying manuscript.  In addition a GUI has been developed to allow for interactive model fitting and visualisation of results.  This is provided in the `/app` directory and can be run using the following terminal command:
 
-```console
+```shell
 RScript APS_app.R
 ```
 

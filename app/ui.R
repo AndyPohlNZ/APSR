@@ -19,8 +19,8 @@ fluidPage(
       hr(),
       "(c) 2023 Andy Pohl | Licensed under ",
       tags$a(href = "https://www.gnu.org/licenses/gpl-3.0.en.html", target = "_blank", "GNU GPLv3"),
-      "| download the source",
-      tags$a(href = "www.github.com/AndyPohlNZ", target = "_blank", "here"), "." # TODO update github
+      "| download the source:",
+      tags$a(href = "www.github.com/AndyPohlNZ/APSR", target = "_blank", "github.com/AndyPohlNZ/APSR"), "." # TODO update github
     ),
 
     # Alignment inline field tag (use tags$div(id = "inline", ....))
