@@ -1,0 +1,42 @@
+
+model{
+    # Priors
+    sigma2_perc ~ dgamma(0.001, 0.001)
+    sigma <- sqrt(1/sigma2_perc)
+
+    # mean of tau2
+    alpha ~ dt(0, 1/(d_a0*d_a0), 3)T(0, )
+    lalpha2 <- log(alpha*alpha)
+
+    # variation in gamma
+    xi ~ dt(0, 1/(d_xi0*d_xi0), 3)T(0,)
+
+    for(i in 1:Q_sm){
+        gamma[i] ~ dnorm(lalpha2, 1/(xi*xi))
+    }
+    ltau2 <- C %*% gamma
+    
+
+    for(i in 1:(Q-2)){
+        tau[i] <- sqrt(exp(ltau2[i]))
+    }
+
+    # theta
+    for(i in 1:2){
+        theta[i] ~ dnorm(0, 1/(100*100))
+    }
+    for(i in 3:Q){
+        theta[i] ~ dnorm(2*theta[i-1] - theta[i-2], 1/(tau[i-2]*tau[i-2]))
+    }
+
+    # mu
+    mu <- B %*% theta
+    
+
+    # observations
+    for(i in 1:T){
+        y[i] ~ dnorm(mu[i], sigma2_perc)
+    }
+
+}
+
