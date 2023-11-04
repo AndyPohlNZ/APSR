@@ -4,18 +4,17 @@ An R package for implementation of adaptive P-splines for challenging signal pro
 
 The majority of  methods considered are Bayesian in nature and rely on Markov Chain Monte Carlo methods for inference.  A combination of Gibbs and slice sampling is used via the [JAGS](https://mcmc-jags.sourceforge.io/)   and its acompanying [R interface](https://cran.r-project.org/web/packages/rjags/index.html).  `JAGS` should be installed prior to using the code in this repository.
 
-A walkthrough of model fitting is provided in the `APS_Fit.R` file, with `APS_Analysis.R` containing additonal frequently used visualisations which form part of the acompanying manuscript.  In addition a GUI has been developed to allow for interactive model fitting and visualisation of results.  This is provided in the `/app` directory and can be run using the following command:
+A walkthrough of model fitting is provided in the `APS_Fit.R` file, with `APS_Analysis.R` containing additonal frequently used visualisations which form part of the acompanying manuscript.  In addition a GUI has been developed to allow for interactive model fitting and visualisation of results.  This is provided in the `/app` directory and can be run using the following terminal command:
 
-```r
-if.packages("shiny") install.packages("shiny"); library("shiny")
-shiny::runApp("./app/")
+```console
+RScript APS_app.R
 ```
 
 This package is currently under development and is not yet registered.  While the package is designed for use for common data-processing problems in biomechancis (noteably inverse kinematics and inverse dynamics applications) its use is not limited to this application.
 
 `APSR` was developed and is maintained by:
 
-[Andrew J. Pohl](https://andypohlnz.github.io/)
+[Andy Pohl](https://andypohlnz.github.io/)
 andrew.pohl@ucalgary.ca
 
 If you wish to contribute to the development of this package or identify any issues please raise these via an issue or pull request.
@@ -26,7 +25,7 @@ If you wish to contribute to the development of this package or identify any iss
 Importantly `APSR` relies on a working instation of [JAGS](https://mcmc-jags.sourceforge.io/) and its acompanying [R interface](https://cran.r-project.org/web/packages/rjags/index.html).  JAGS version 4.3.1 was used for development and testing.
 
 ## Publications
-A peer reviewed manuscript detailing this work is currently under review and will be liked once accepted for publication.
+A peer reviewed manuscript detailing this work is currently under review and will be linked once accepted for publication.
 
 ## Acknowledgements
 This work was supported by the Natural Sciences and Engineering Research Council of Canada (NSERC) and an Alberta Graduate Scholarship. The author would like to thank the following people for their contributions to this work:
