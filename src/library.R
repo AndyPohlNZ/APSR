@@ -1,5 +1,6 @@
 print("===== Welcome to AdPSplineR ===== ")
-list.of.packages <- c("here", "Rcpp", "posterior", "RColorBrewer", "coda", "bayesplot")
+list.of.packages <- c("here", "Rcpp", "posterior", "RColorBrewer", "coda", "bayesplot", 
+"shiny", "DT", "shinycssloaders")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[, "Package"])]
 
 if (length(new.packages)) {
@@ -469,3 +470,224 @@ ess_est <- function(fit, fc_star = 11, to_star = 52, ord = "pre") {
         ))
     }
 }
+
+
+# Function to get prior hyperparms
+get_prior_hyperparms <- function(ddB, criterion, model,
+                                 nsim = 5000,
+                                 visualize = FALSE,
+                                 verbose = FALSE,
+                                 PSpline_lims = c(1e-5, 5e-2),
+                                 APS_ind_lims = c(1e-3, 2e-2),
+                                 APS_ar_lims = c(1, 1.5),
+                                 APS_spl_lims = c(1, 1.5),
+                                 C = NULL) {
+    if (!(model %in% c("PSpline", "APS_ind", "APS_ar", "APS_spl"))) {
+        stop("Model must be one of 'PSpline', 'APS_ind', 'APS_ar', or 'APS_spl'")
+    }
+
+
+    if (model == "PSpline") {
+        par(mfrow = c(1, 1))
+        xlab <- c("xi")
+    } else {
+        par(mfrow = c(1, 2))
+        xlab <- c("a0", "xi")
+    }
+
+    d_xi <- seq(PSpline_lims[1], PSpline_lims[2], length.out = 50)
+    qderv <- rep(NA, length(d_xi))
+    K <- dim(ddB$matrix)[2]
+    if (verbose) print("Determining prior hyperparameters for standard P-Spline")
+    for (l in 1:length(d_xi)) {
+        if (verbose) print(paste0("l = ", l, " xi = ", d_xi[l]))
+        xi <- d_xi[l]
+        max_derv <- rep(NA, nsim)
+        for (i in 1:length(max_derv)) {
+            # Generate tau2 ~ t_3+(0, xi^2)
+            x <- rchisq(1, df = 3)
+            v <- (3 * xi^2) / x # v ~ invchi2(nu, xi^2)
+            tau2 <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt(v)) # tau2 ~ t_3+(0, xi^2)
+            tau <- sqrt(tau2)
+            # theta | . is 2nd order RW
+            theta <- rep(0, K)
+            for (k in (pDeg + 1):K) {
+                theta[k] <- 2 * theta[k - 1] - theta[k - 2] + tau * rnorm(1)
+            }
+            # Compute max of 2nd deriative
+            max_derv[i] <- max(abs(ddB$matrix %*% theta))
+        }
+        # Compute 90th quantile of max(|y''(t)|)
+        qderv[l] <- quantile(max_derv, 0.90, na.rm = TRUE)
+        if (verbose) print(paste0(".   q = ", qderv[l]))
+    }
+
+    if (visualize) {
+        # Visualize relationship between xi and 90% quantile of max(|y''(t)|)
+        plot(d_xi, qderv,
+            type = "l",
+            ylab = "",
+            xlab = xlab[1],
+            ylim = c(0, 2 * criterion)
+        )
+        abline(h = criterion, col = "red", lty = 2)
+        title(ylab = "90% quantile: max(|y''(t)|)", line = 2, cex.lab = 1)
+    }
+    # Determine which xi meets the 90% quantile threshold
+    hyperparms <- list(xi = d_xi[which.min(abs(qderv - criterion))])
+
+    if (model == "APS_ind") {
+        d_xis <- seq(APS_ind_lims[1], APS_ind_lims[2], length.out = 50) # grid of d_xis
+        qderv <- matrix(NA, length(d_xis))
+        if (verbose) print("Determining prior hyperparameters for APS_ind")
+        for (l in 1:length(d_xis)) {
+            if (verbose) print(paste0("l = ", l, " xi = ", d_xis[l]))
+            dxi <- d_xis[l]
+            max_derv <- rep(NA, nsim)
+            nu <- 3 # 1/runif(1)  # Can also simulate nu from its inverse uniform prior
+            for (i in 1:length(max_derv)) {
+                # Generate xi ~ t_3+(0, dxi^2)
+                x <- rchisq(1, df = 3)
+                v_xi <- (3 * dxi^2) / x # tau2_k ~ invchi2(nu, xi^2)
+                xi <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt(v_xi))
+                # tau2_k ~ invchi2(nu, xi^2)
+                x <- rchisq(K - pDeg, df = 3)
+                tau2_k <- (nu * xi^2) / x # tau2_k ~ invchi2(nu, xi^2)
+
+                # theta | . is 2nd order RW
+                theta <- rep(0, K)
+                for (k in (pDeg + 1):K) {
+                    theta[k] <- 2 * theta[k - 1] - theta[k - 2] + sqrt(tau2_k[k - pDeg]) * rnorm(1)
+                }
+                # Compute max of 2nd deriative
+                max_derv[i] <- max(abs(ddB$matrix %*% theta))
+            }
+
+            # Compute 90th quantile of max(|y''(t)|)
+            qderv[l] <- quantile(max_derv, 0.90)
+            if (verbose) print(paste0(".   q = ", qderv[l]))
+        }
+        if (visualize) {
+            # visualize relationship between scale of prior and 90% quantile of max(|y''(t)|)
+            plot(d_xis, qderv,
+                type = "l",
+                ylab = TeX(r"(90% quantile of $max(|f''(t)|) \, \, (rad\cdot s^{-2})$)"),
+                xlab = xlab[2],
+                ylim = c(0, 2 * criterion)
+            )
+            abline(h = criterion, col = "red", lty = 2)
+        }
+        # Determine which prior scale meets the 90% quantile threshold
+        hyperparms$a0 <- hyperparms$xi
+        hyperparms$xi <- d_xis[min(which(qderv > criterion))]
+    } else if (model == "APS_ar") {
+        # Define grid of prior scales
+        delta_xi0 <- seq(APS_ar_lims[1], APS_ar_lims[2], length.out = 50)
+        delta_a0 <- hyperparms$xi # Set to ensure that standard P-Spline is within space of models
+
+        hparms <- expand.grid(xi0 = delta_xi0, a0 = delta_a0)
+        qderv <- rep(NA, nrow(hparms))
+        if (verbose) print("Determining prior hyperparameters for APS_ar")
+        for (l in 1:nrow(hparms)) {
+            if (verbose) print(paste0("l = ", l, "/", nrow(hparms), ": delta_xi0 = ", hparms[l, "xi0"], " - delta_a0 = ", hparms[l, "a0"]))
+            delta_ao <- hparms[l, "a0"]
+            d_xi0 <- hparms[l, "xi0"]
+            max_derv <- rep(NA, nsim)
+            for (i in 1:length(max_derv)) {
+                # generate \alpha_0 from half-t prior with delta_a0 = 0.002
+                x <- rchisq(1, df = 3)
+                a0 <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt((3 * delta_ao^2) / x))
+                # generate xi from half t priro with scale d_xi
+                x <- rchisq(1, df = 3)
+                xi <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt((3 * d_xi0^2) / x))
+                # generate phi from uniform prior
+                phi <- runif(1)
+                # ltau2 | phi, xi, a0 ~ AR(1)
+                ltau2_k <- rep(NA, K - pDeg)
+                ltau2_k[1] <- log(a0^2) + xi * rnorm(1)
+                for (k in 2:(K - pDeg)) {
+                    ltau2_k[k] <- log(a0^2) + phi * (ltau2_k[k - 1] - log(a0^2)) + xi * rnorm(1)
+                }
+                # theta | . is 2nd order RW
+                theta <- rep(0, K)
+                for (k in (pDeg + 1):K) {
+                    theta[k] <- 2 * theta[k - 1] - theta[k - 2] + sqrt(exp(ltau2_k[k - pDeg])) * rnorm(1)
+                }
+                # Compute max of 2nd deriative
+                max_derv[i] <- max(abs(ddB$matrix %*% theta))
+            }
+            # generate 90th quantile of deriative
+            qderv[l] <- quantile(max_derv, 0.90, na.rm = T)
+            if (verbose) print(paste0(".   q = ", qderv[l]))
+        }
+
+        if (visualize) {
+            # visualize relationship between scale of prior and 90% quantile of max(|y''(t)|)
+            plot(hparms[, "xi0"], qderv,
+                type = "l",
+                ylab = "90% quantile of max(|f''(t)|)",
+                xlab = xlab[2],
+                ylim = c(0, 2 * criterion)
+            )
+            abline(h = criterion, col = "red", lty = 2)
+        }
+        # determine which prior scale meets the 90% quantile threshold
+        hyperparms$a0 <- hparms[min(which(qderv > criterion)), "a0"]
+        hyperparms$xi <- hparms[min(which(qderv > criterion)), "xi0"]
+    } else if (model == "APS_spl") {
+        if (is.null(C)) stop("Smoothing basis C must be provided")
+
+        K_C <- dim(C$matrix)[2] # Define grid of prior scales
+        delta_xi0 <- seq(APS_spl_lims[1], APS_spl_lims[2], length.out = 50)
+        delta_a0 <- hyperparms$xi # Set to ensure that standard P-Spline is within space of models
+        hparms <- expand.grid(xi0 = delta_xi0, a0 = delta_a0)
+        qderv <- rep(NA, nrow(hparms))
+        if (verbose) print("Determining prior hyperparameters for APS_spl")
+        for (l in 1:nrow(hparms)) {
+            if (verbose) print(paste0("l = ", l, " delta_xi0 = ", hparms[l, "xi0"]))
+            delta_xi0 <- hparms[l, "xi0"]
+            delta_a0 <- hparms[l, "a0"]
+            max_derv <- rep(NA, nsim)
+            for (i in 1:length(max_derv)) {
+                # generate \alpha_0 from half-t prior with delta_a0 = 0.002
+                x <- rchisq(1, df = 3)
+                a0 <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt((3 * delta_a0^2) / x)) # tau2_k ~ invchi2(nu, xi^2)
+                # generate xi from half t priro with scale d_xi
+                x <- rchisq(1, df = 3)
+                xi <- rtruncnorm(1, a = 0, b = Inf, mean = 0, sd = sqrt((3 * delta_xi0^2) / x))
+                # gamma ~ N(log(a0^2), xi^2)
+                # ltau2 | phi, xi, a0 ~ Cubic Spline given basis matrix C
+                gamma <- log(a0^2) + xi * rnorm(K_C, 1)
+                ltau2_k <- C$matrix %*% gamma
+                # theta | . is 2nd order RW
+                theta <- rep(0, K)
+                for (k in (pDeg + 1):K) {
+                    theta[k] <- 2 * theta[k - 1] - theta[k - 2] + sqrt(exp(ltau2_k[k - pDeg])) * rnorm(1)
+                }
+                # Compute max of 2nd deriative
+                max_derv[i] <- max(abs(ddB$matrix %*% theta))
+            }
+            # generate 90th quantile of deriative
+            qderv[l] <- quantile(max_derv, 0.95, na.rm = T)
+            if (verbose) print(paste0(".   q = ", qderv[l]))
+        }
+
+        if (visualize) {
+            # visualize relationship between scale of prior and 90% quantile of max(|y''(t)|)
+            plot(hparms[, "xi0"], qderv,
+                type = "l",
+                ylab = TeX(r"(90% quantile of $max(|f''(t)|) \, \, (rad\cdot s^{-2})$)"),
+                xlab = TeX(r"(Scale of prior for $\xi$)"),
+                ylim = c(0, 2 * criterion)
+            )
+            abline(h = criterion, col = "red", lty = 2)
+        }
+
+        # Determine which prior scale meets the 90% quantile threshold
+        hyperparms$a0 <- hparms[min(which(qderv > criterion)), "a0"]
+        hyperparms$xi <- hparms[min(which(qderv > criterion)), "xi0"]
+    }
+    return(hyperparms)
+}
+
+

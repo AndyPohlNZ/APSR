@@ -1,3 +1,5 @@
+# Ignore output files
+writeup/
 # Ignore output
 *.RDS
 

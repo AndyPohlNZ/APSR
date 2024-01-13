@@ -225,6 +225,34 @@ id_cutoff_optimal_post_fmg <- function(y, crit, fs, fc, to) {
     ))
 }
 
+cutoff_optimal <- function(x, xcriterion, deriative, t, fs) {
+    cost <- function(fcstar, x, xcriterion, deriative, t, fs) {
+        fc <- inv_bounded_transform((fcstar), 1, fs / 2)
+        if (deriative > 0) {
+            x_hat <- finite_diff(filtbutter(x, butter(2, fc / (fs / 2), type = "low")), t, deriative)
+        } else {
+            x_hat <- filtbutter(x, butter(2, fc / (fs / 2), type = "low"))
+        }
+
+        return(sqrt(mean((xcriterion - x_hat)^2)))
+    }
+    f <- function(fcstar) {
+        return(cost(fcstar, x, xcriterion, deriative, t, fs))
+    }
+
+    res <- optim(bounded_transform(50, 1, fs / 2), f, method = "BFGS", control = list(trace = 0, maxit = 20000))
+
+    if (deriative > 0) {
+        xf <- finite_diff(filtbutter(x, butter(2, inv_bounded_transform(res$par, 1, fs / 2) / (fs / 2), type = "low")), t, deriative)
+    } else {
+        xf <- filtbutter(x, butter(2, inv_bounded_transform(res$par, 1, fs / 2) / (fs / 2), type = "low"))
+    }
+    resid <- sqrt(sum((x - xf)^2))
+    return(list(
+        fc = inv_bounded_transform(res$par, 1, fs / 2),
+        resid = resid
+    ))
+}
 
 dowling_cutoff_optimal <- function(x, xcriterion, t, fs) {
     cost <- function(fcstar, x, xcriterion, t, fs) {
