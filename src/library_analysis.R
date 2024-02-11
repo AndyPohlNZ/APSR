@@ -1,5 +1,18 @@
+# ==============================================================================
+# library_analysis.R
+
+# Contains key functions for the analysis of  APS model output.
+
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+# ==============================================================================
+
 if (!require("coda")) install.packages("coda")
+
 library("coda")
+
+
 
 
 rmse <- function(x, y) {
@@ -34,6 +47,9 @@ rmse <- function(x, y) {
 
     return(sqrt(mean((x - y)^2)))
 }
+
+
+
 
 bayes_est <- function(fit) {
     # Compute Bayesian estimates for y, ddy, and tau from a fitted model.

@@ -1,3 +1,14 @@
+# ==============================================================================
+# PriorPredictive.R
+
+# Itendifies prior scales for the half-t prior on tau^2 via prior predictive
+# simulation accross a grid of potential values
+
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+# ==============================================================================
+
 if (!require("truncnorm")) install.packages("truncnorm")
 
 library("truncnorm")

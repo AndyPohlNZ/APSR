@@ -1,3 +1,18 @@
+# ==============================================================================
+# library_filter.R
+
+# Contains key functions for applying standard Butterworth filters to time
+# series data.
+
+# Used to generate results in Pohl et al. (2024) Adaptive P-Splines for
+# challenging filtering problems in biomechanics.
+
+
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+# ==============================================================================
+
 # Filter functions for AdPSpline Analysis.
 library("signal")
 library("fftw")

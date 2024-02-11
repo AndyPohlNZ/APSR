@@ -1,75 +1,52 @@
-# ==============================================================================
-# Functions for generating simulated data
-# Used for simulations performed in
-# Adapative P-Splines for challenging filtering problems in biomechanics
-# Pohl et al. (2024)
-# ==============================================================================
+## ==============================================================================
+# library_simulation.R
 
+# Key functions for generating simulated data
+
+
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+
+
+# ============================================================================== ==============================================================================
 print("Loading library_simulation.R")
 
-# Continuous approximation of the sgn function
-approx_sign <- function(t, lam) {
-    # Approximate the sign function via atan
+# Continous approximation of the sign function
 
-    return(2 / pi * atan(lam * t))
-}
-
-dapprox_sign <- function(t, lam) {
-    # Approximate the sign function via atan
-    return((2 * lam) / (pi * (1 + (lam * t)^2)))
-}
-
-ddapprox_sign <- function(t, lam) {
-    # Approximate the sign function via atan
-
-    return(-4 * lam^2 * t / (pi * (1 + (lam * t)^2)^2))
-}
-
-# Continuous approximation of the absolute value function
-approx_abs <- function(t, lam) {
-    return(t^2 / (sqrt(t^2 + lam^2)))
-}
-
-dapprox_abs <- function(t, lam) {
-    return((2 * t * (t^2 + lam^2) - t^3) / ((t^2 + lam^2)^(3 / 2)))
-}
-
-ddapprox_abs <- function(t, lam) {
-    return(
-        (2 * (t^2 + lam^2)^(3 / 2) - 3 * t^2 * (t^2 + lam^2)^(1 / 2)) /
-            ((t^2 + lam^2)^3)
-    )
-}
-
+sigmoid <- function(x) 1 / (1 + exp(-x))
+dsigmoid <- function(x) sigmoid(x) * (1 - sigmoid(x))
+d2sigmoid <- function(x) dsigmoid(x) * (1 - 2 * sigmoid(x))
+approx_sign <- function(t, lam) sigmoid(lam * t)
+dapprox_sign <- function(t, lam) lam * dsigmoid(lam * t)
+ddapprox_sign <- function(t, lam) lam^2 * d2sigmoid(lam * t)
+##
 # ==============================================================================
 # Continous approximation to the Heavisine function
 # See Donoho and Johnstone (1994)
 # ==============================================================================
 heavisine <- function(t, lam) {
-    return(
-        4 * sin(4 * pi * t) -
-            approx_sign(t - 0.3, lam) -
-            approx_sign(0.72 - t, lam)
-    )
+    term1 <- 4 * sin(4 * pi * t)
+    term2 <- -approx_sign(t - 0.3, lam)
+    term3 <- -approx_sign(0.72 - t, lam)
+    return(term1 + term2 + term3)
 }
 
-# 1st deriative
+
 dheavisine <- function(t, lam) {
-    return(
-        16 * pi * cos(4 * pi * t) -
-            dapprox_sign(t - 0.3, lam) +
-            dapprox_sign(0.72 - t, lam)
-    )
+    dterm1 <- 4 * 4 * pi * cos(4 * pi * t)
+    dterm2 <- -dapprox_sign(t - 0.3, lam)
+    dterm3 <- dapprox_sign(0.72 - t, lam)
+    return(dterm1 + dterm2 + dterm3)
 }
 
-# 2nd deriative
 ddheavisine <- function(t, lam) {
-    return(
-        -64 * pi^2 * sin(4 * pi * t) -
-            ddapprox_sign(t - 0.3, lam) -
-            ddapprox_sign(0.72 - t, lam)
-    )
+    ddterm1 <- -4 * pi * 4 * 4 * pi * sin(4 * pi * t)
+    ddterm2 <- -ddapprox_sign(t - 0.3, lam)
+    ddterm3 <- -ddapprox_sign(0.72 - t, lam)
+    return(ddterm1 + ddterm2 + ddterm3)
 }
+
 # ==============================================================================
 # Continous approximation to the Blocks
 # See Donoho and Johnstone (1994)
@@ -105,13 +82,6 @@ ddblocks <- function(t, lambda = 500,
     }
     return(f)
 }
-
-
-# ==============================================================================
-# Continous approximation to the Bumps function
-# See Donoho and Johnstone (1994)
-# ==============================================================================
-# TODO:  Note currently buggy ... - need to fix
 
 
 # ==============================================================================

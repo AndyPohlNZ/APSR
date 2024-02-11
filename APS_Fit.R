@@ -1,3 +1,13 @@
+# ==============================================================================
+# APS_Fit.R
+#
+# Steps through applying the APS model to the dowling dataset.
+#
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+# ==============================================================================
+
 if (!require("rjags")) install.packages("rjags")
 if (!require("coda")) install.packages("coda")
 if (!require("snow")) install.packages("snow")
@@ -21,8 +31,8 @@ set.seed(seed)
 
 # Set MCMC parameters
 nchains <- 4 # Number of independent chains
-nadapt <- 10000 # Size of adaption phase
-nsampling <- 50000 # Number of samples per chain
+nadapt <- 5000 # Size of adaption phase
+nsampling <- 10000 # Number of samples per chain
 thin <- 1 # Thinning rate per chain.
 
 # ============================= Load Data ======================================
@@ -125,6 +135,9 @@ if (model_type %in% c("Filter", "All")) {
 if (model_type %in% c("PSpline", "All")) {
     print("    Computing Bayes Models:")
     print("        1: PSpline")
+    
+    hyperparms <- get_prior_hyperparms_opt(ddB, 1000, "PSpline", pDeg = pDeg)
+
     coda.samples.wrapper <- function(j) {
         init_fn <- function() {
             mle <- mle_pspl(B, MM, y_std)
@@ -142,7 +155,7 @@ if (model_type %in% c("PSpline", "All")) {
                 B = B$matrix,
                 y = y_std,
                 ord = B$deg,
-                xi = 0.002
+                xi = hyperparms$xi
             ),
             inits = init_fn,
             n.chains = 1,
@@ -157,7 +170,7 @@ if (model_type %in% c("PSpline", "All")) {
     t1 <- proc.time()
     cl <- makeCluster(nchains, "SOCK")
     clusterEvalQ(cl, library(rjags))
-    clusterExport(cl, list("MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
+    clusterExport(cl, list("hyperparms", "MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
     out <- clusterApply(cl, 1:nchains, coda.samples.wrapper)
     for (i in 1:length(out)) {
         out[[i]] <- out[[i]][[1]]
@@ -204,6 +217,7 @@ if (model_type %in% c("PSpline", "All")) {
 # ====================== APS_ind =============================================
 if (model_type %in% c("APS_ind", "All")) {
     print("        2: APS_ind")
+        hyperparms <- get_prior_hyperparms_opt(ddB, 1000, "APS_ind", pDeg = pDeg)
     coda.samples.wrapper <- function(j) {
         init_fn <- function() {
             mle <- mle_pspl(B, MM, y_std)
@@ -220,8 +234,8 @@ if (model_type %in% c("APS_ind", "All")) {
                 Q = dim(B$matrix)[2],
                 B = B$matrix,
                 y = y_std,
-                d_a0 = 0.002,
-                d_xi0 = 1.65
+                d_a0 = hyperparms$a0,
+                d_xi0 = hyperparms$xi
             ),
             inits = init_fn,
             n.chains = 1,
@@ -236,7 +250,7 @@ if (model_type %in% c("APS_ind", "All")) {
     t1 <- proc.time()
     cl <- makeCluster(nchains, "SOCK")
     clusterEvalQ(cl, library(rjags))
-    clusterExport(cl, list("MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
+    clusterExport(cl, list("hyperparms", "MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
     out <- clusterApply(cl, 1:nchains, coda.samples.wrapper)
     for (i in 1:length(out)) {
         out[[i]] <- out[[i]][[1]]
@@ -285,6 +299,9 @@ if (model_type %in% c("APS_ind", "All")) {
 
 if (model_type %in% c("APS_ar", "All")) {
     print("        3: APS_ar")
+    
+    hyperparms <- get_prior_hyperparms_opt(ddB, 1000, "APS_ar", pDeg = pDeg)
+
     coda.samples.wrapper <- function(j) {
         init_fn <- function() {
             mle <- mle_pspl(B, MM, y_std)
@@ -302,8 +319,8 @@ if (model_type %in% c("APS_ar", "All")) {
                 B = B$matrix,
                 y = y_std,
                 ord = B$deg,
-                d_a0 = 0.002,
-                d_xi0 = 1.25
+                d_a0 = hyperparms$a0,
+                d_xi0 = hyperparms$xi
             ),
             inits = init_fn,
             n.chains = 1,
@@ -318,7 +335,7 @@ if (model_type %in% c("APS_ar", "All")) {
     t1 <- proc.time()
     cl <- makeCluster(nchains, "SOCK")
     clusterEvalQ(cl, library(rjags))
-    clusterExport(cl, list("MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
+    clusterExport(cl, list("hyperparms", "MM_likelihood", "mle_pspl", "t", "B", "MM", "y_std", "nadapt", "nsampling", "thin"))
     out <- clusterApply(cl, 1:nchains, coda.samples.wrapper)
     for (i in 1:length(out)) {
         out[[i]] <- out[[i]][[1]]
@@ -366,6 +383,8 @@ if (model_type %in% c("APS_ar", "All")) {
 # ====================== AdPSpline_spl =========================================
 
 if (model_type %in% c("APS_spl", "All")) {
+    
+    hyperparms <- get_prior_hyperparms_opt(ddB, 1000, "APS_spl", pDeg = pDeg)
     print("        4: APS_spl")
     coda.samples.wrapper <- function(j) {
         init_fn <- function() {
@@ -386,8 +405,8 @@ if (model_type %in% c("APS_spl", "All")) {
                 C = C$matrix,
                 y = y_std,
                 ord = B$deg,
-                d_a0 = 0.002,
-                d_xi0 = 1.15
+                d_a0 = hyperparms$a0,
+                d_xi0 = hyperparms$xi
             ),
             inits = init_fn,
             n.chains = 1,
@@ -402,7 +421,7 @@ if (model_type %in% c("APS_spl", "All")) {
     t1 <- proc.time()
     cl <- makeCluster(nchains, "SOCK")
     clusterEvalQ(cl, library(rjags))
-    clusterExport(cl, list("MM_likelihood", "mle_pspl", "t", "B", "MM", "C", "y_std", "nadapt", "nsampling", "thin"))
+    clusterExport(cl, list("hyperparms", "MM_likelihood", "mle_pspl", "t", "B", "MM", "C", "y_std", "nadapt", "nsampling", "thin"))
     out <- clusterApply(cl, 1:nchains, coda.samples.wrapper)
     for (i in 1:length(out)) {
         out[[i]] <- out[[i]][[1]]
