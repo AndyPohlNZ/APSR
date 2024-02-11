@@ -17,3 +17,6 @@ writeup/
 .Rproj.user/
 .Rhistory
 .RData
+bkp
+results
+scratch
