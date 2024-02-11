@@ -1,11 +1,17 @@
-# =============================================================================
+## ==============================================================================
+# run_impactSim.R
+#
 # Simulation of a point mass impacting a compliant surface
 
 # The model is a simple point mass with a spring and damper in parallel
 # with the mass. The mass is dropped from a height of 1m and the impact
 # is simulated. The model is solved using the deSolve package.
 
-# =============================================================================
+# Created by:   Andy Pohl
+#               Feb 2024
+#               andrew.pohl@ucalgary.ca
+# ==============================================================================
+
 
 library("deSolve")
 gen_impact_data <- function(
